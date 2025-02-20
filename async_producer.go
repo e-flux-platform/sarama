@@ -1055,6 +1055,17 @@ func (bp *brokerProducer) rollOver() {
 	bp.buffer = newProduceSet(bp.parent)
 }
 
+func timedPrintf(format string, a ...any) {
+	now := time.Now()
+	fmt.Printf("[%s] ", now.Format("2006-01-02 15:04:05.000000000"))
+
+	if len(a) == 0 {
+		fmt.Print(format)
+	} else {
+		fmt.Printf(format, a...)
+	}
+}
+
 func (bp *brokerProducer) handleResponse(response *brokerProducerResponse) {
 	if response.err != nil {
 		bp.handleError(response.set, response.err)
@@ -1102,6 +1113,8 @@ func (bp *brokerProducer) handleSuccess(sent *produceSet, response *ProduceRespo
 		// Retriable errors
 		case ErrInvalidMessage, ErrUnknownTopicOrPartition, ErrLeaderNotAvailable, ErrNotLeaderForPartition,
 			ErrRequestTimedOut, ErrNotEnoughReplicas, ErrNotEnoughReplicasAfterAppend:
+			timedPrintf("err %s %d!!! %s\n", topic, partition, block.Err.Error())
+			//time.Sleep(100 * time.Millisecond)
 			if bp.parent.conf.Producer.Retry.Max <= 0 {
 				bp.parent.abandonBrokerConnection(bp.broker)
 				bp.parent.returnErrors(pSet.msgs, block.Err)
